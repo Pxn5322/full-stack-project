@@ -6,7 +6,7 @@ import { Button, Container, Navbar } from 'react-bootstrap';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import './App.css';
-import SignupPage from './pages/SignUpPage';
+import SignupPage from './pages/SignupPage';
 import { useContext } from 'react';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
