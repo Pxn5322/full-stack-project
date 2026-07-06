@@ -3,7 +3,8 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { BooksContext } from "../contexts/BooksProvider";
 import { Alert, Button, Card, Col, Container, Form, Row } from "react-bootstrap";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function SignupPage() {
     const [registrationData, setRegistrationData] = useState({
@@ -38,7 +39,13 @@ export default function SignupPage() {
 
         setLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, registrationData.email, registrationData.password);
+            const userCredential = await createUserWithEmailAndPassword(auth, registrationData.email, registrationData.password);
+            const user = userCredential.user;
+
+            await setDoc(doc(db, "users", user.uid), {
+                email: user.email,
+            });
+
             navigate("/bookings");
         } catch (error) {
             console.error(error);
@@ -53,7 +60,20 @@ export default function SignupPage() {
         setMessage('');
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            const userCredential = await signInWithPopup(auth, provider);
+            const user = userCredential.user;
+
+            // Check if document exists first so we don't overwrite existing profile details if they log in again
+            const userDocRef = doc(db, "users", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (!userDocSnap.exists()) {
+                // Provision new metadata parameters if they are registering for the first time via Google Provider
+                await setDoc(userDocRef, {
+                    email: user.email,
+                });
+            }
+
             navigate("/bookings");
         } catch (error) {
             console.error(error);

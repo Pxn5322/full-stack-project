@@ -18,6 +18,7 @@ export const BooksContext = createContext();
 
 export function BooksProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
+    const [users, setUsers] = useState(null);
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState({ loading: false, error: null, success: false });
     const [bookings, setBookings] = useState([]);
@@ -25,6 +26,20 @@ export function BooksProvider({ children }) {
     const [bookingsLoading, setBookingsLoading] = useState(true);
     const [allBookings, setAllBookings] = useState([]);
     const [allBookingsLoading, setAllBookingsLoading] = useState(false);
+
+    const fetchUsers = useCallback(async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, 'users'));
+            const usersArray = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            setUsers(usersArray);
+        } catch (error) {
+            console.error("Error fetching user catalog parameters:", error);
+        }
+    }, []);
 
     const fetchBookingsByUser = useCallback(async (userId) => {
         setBookingsLoading(true);
@@ -71,11 +86,29 @@ export function BooksProvider({ children }) {
                 department: department,
                 active: true
             });
-            const newDoctor = await getDocs(newDoctorRef);
+            const newDoctor = await getDoc(newDoctorRef);
 
             setDoctors(prev => [{ id: newDoctor.id, ...newDoctor.data() }, ...prev]);
         } catch (error) {
             console.error("Error fetch doctor: ", error);
+        }
+    }, []);
+
+    const editDoctors = useCallback(async (doctorId, name, department) => {
+        try {
+            const docRef = doc(db, 'doctors', doctorId);
+            await updateDoc(docRef, { name: name, department: department });
+        } catch (error) {
+            console.error("Error editing practitioner fields:", error);
+        }
+    }, []);
+
+    const deleteDoctor = useCallback(async (doctorId) => {
+        try {
+            const doctorRef = doc(db, "doctors", doctorId);
+            await deleteDoc(doctorRef);
+        } catch (error) {
+            console.error("Error removing doctor document: ", error);
         }
     }, []);
 
@@ -91,10 +124,9 @@ export function BooksProvider({ children }) {
 
             const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty) {
+            if (querySnapshot.size > 0) {
                 // If any records are returned, it means a conflict exists
-                setStatus({ loading: false, error: "This doctor is already booked for the selected date and time slot. Please choose another time or doctor.", success: false });
-                return;
+                throw new Error("This doctor is already booked for the selected date and time slot.");
             }
 
             // 2. Proceed with booking if no conflict is found
@@ -106,6 +138,7 @@ export function BooksProvider({ children }) {
             setBookings(prev => [{ id: newBooking.id, ...newBooking.data() }, ...prev]);
         } catch (error) {
             console.error(error);
+            throw error;
         }
     }, []);
 
@@ -136,8 +169,7 @@ export function BooksProvider({ children }) {
                 const conflicts = querySnapshot.docs.filter(doc => doc.id !== bookingId);
 
                 if (conflicts.length > 0) {
-                    setStatus({ loading: false, error: "This slot is already reserved for this practitioner. Please select another timing option.", success: false });
-                    return;
+                    throw new Error("This slot is already reserved for this practitioner.");
                 }
             }
 
@@ -157,6 +189,7 @@ export function BooksProvider({ children }) {
             setBookings(prev => prev.map(b => (b.id === bookingId ? { id: bookingId, ...updatedData } : b)));
         } catch (error) {
             console.error(error);
+            throw error;
         }
     }, []);
 
@@ -196,7 +229,26 @@ export function BooksProvider({ children }) {
         });
     }, []);
 
-    const value = { currentUser, bookings, bookingsLoading, doctors, status, setStatus, fetchBookingsByUser, saveBooking, updateBooking, deleteBooking, addDoctors, allBookings, allBookingsLoading, fetchAllBookings };
+    const value = {
+        currentUser,
+        users,
+        bookings,
+        bookingsLoading,
+        doctors,
+        status,
+        allBookings,
+        allBookingsLoading,
+        setStatus,
+        fetchBookingsByUser,
+        saveBooking,
+        updateBooking,
+        deleteBooking,
+        addDoctors,
+        editDoctors,
+        deleteDoctor,
+        fetchUsers,
+        fetchAllBookings
+    };
 
     return (
         <BooksContext.Provider value={value}>

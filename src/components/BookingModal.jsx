@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { BooksContext } from '../contexts/BooksProvider';
 
-export default function BookingModal({ show, onHide, isEditing, currentBooking, onSubmit, status, setStatus, currentUser }) {
+export default function BookingModal({ show, onHide, isEditing, currentBooking, onSubmit, status, setStatus, currentUser = null, users = [] }) {
     const { doctors } = useContext(BooksContext);
     const [formData, setFormData] = useState({
         name: '',
@@ -61,11 +61,7 @@ export default function BookingModal({ show, onHide, isEditing, currentBooking, 
         }
 
         if (name === 'department') {
-            setFormData(prev => ({
-                ...prev,
-                department: value,
-                doctor: ''
-            }));
+            setFormData(prev => ({ ...prev, department: value, doctor: '' }));
             return;
         }
 
@@ -105,6 +101,20 @@ export default function BookingModal({ show, onHide, isEditing, currentBooking, 
 
                 <Form onSubmit={handleFormSubmit} className="mt-3">
                     <Row className="g-4">
+                        {!isEditing && users && users.length > 0 && (
+                            <Form.Group as={Col} xs={12} controlId="formSelectUser" className="mb-2">
+                                <Form.Label className="small fw-bold text-primary">Assign to Existing User Account</Form.Label>
+                                <Form.Select size="lg" value={selectedUserId} onChange={handleUserSelectChange} className="border-primary">
+                                    <option value="">-- Direct Input / New Manual Profiling --</option>
+                                    {users.map(u => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.name} ({u.email})
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        )}
+
                         <Form.Group as={Col} md={6} controlId="formName">
                             <Form.Label className="small fw-semibold text-muted">Full Name</Form.Label>
                             <Form.Control size="lg" type="text" name="name" placeholder="John Doe" value={formData.name} onChange={handleInputChange} required />

@@ -85,7 +85,7 @@ export default function LoginPage() {
                                                 type="email"
                                                 name="email"
                                                 className="border-0"
-                                                placeholder="name@clinic.com"
+                                                placeholder="name@bookcare.com"
                                                 value={credentials.email}
                                                 onChange={handleInputChange}
                                                 required
